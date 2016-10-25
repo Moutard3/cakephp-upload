@@ -79,6 +79,20 @@ class UploadBehavior extends Behavior
     public function beforeSave(Event $event, Entity $entity, ArrayObject $options)
     {
         foreach ($this->config() as $field => $settings) {
+            if(!empty($entity->{$field.'_remove'})) {
+                $path = $this->getPathProcessor($entity, $entity->{$field}, $field, $settings)->basepath();
+
+                $file = [$path . $entity->{$field}];
+                $writer = $this->getWriter($entity, [], $field, $settings);
+                $writer->delete($file);
+
+                $entity->set($field, null);
+                $entity->set(Hash::get($settings, 'fields.dir', 'dir'), null);
+                $entity->set(Hash::get($settings, 'fields.size', 'size'), null);
+                $entity->set(Hash::get($settings, 'fields.type', 'type'), null);
+                continue;
+            }
+
             if (Hash::get((array)$entity->get($field), 'error') !== UPLOAD_ERR_OK) {
                 if (Hash::get($settings, 'restoreValueOnFailure', true)) {
                     $entity->set($field, $entity->getOriginal($field));
